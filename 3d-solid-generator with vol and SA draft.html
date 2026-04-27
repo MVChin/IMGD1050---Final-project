@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>3D Solid Generator</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.js"></script>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>3D Solid Generator</h1>
+    <span class="subtitle">Cylinders, cones, prisms & pyramids</span>
+  </header>
+
+  <div class="panel controls">
+    <label>Solid type
+      <select id="solidType">
+        <option value="cylinder">Cylinder</option>
+        <option value="cone">Cone</option>
+        <option value="prism">Prism</option>
+        <option value="pyramid">Pyramid</option>
+      </select>
+    </label>
+
+    <div id="radiusField">
+      <label>Radius (r)
+        <input type="number" id="radius" value="5" min="0.1" step="0.5">
+      </label>
+    </div>
+
+    <div id="sidesField" class="hidden">
+      <label>Number of base sides (n)
+        <input type="number" id="sides" value="6" min="3" max="24" step="1">
+      </label>
+    </div>
+
+    <div id="sideLengthField" class="hidden">
+      <label>Side length (s)
+        <input type="number" id="sideLength" value="4" min="0.1" step="0.5">
+      </label>
+    </div>
+
+    <label>Height (h)
+      <input type="number" id="height" value="10" min="0.1" step="0.5">
+    </label>
+  </div>
+
+  <div class="canvas-wrap" id="canvas-container">
+    <span class="hint">click + drag to rotate</span>
+  </div>
+
+  <div class="results" id="results">
+    <h2>Results</h2>
+    <div id="formulaDisplay"></div>
+  </div>
+</div>
+
+<script>
+const params = {
+  type: 'cylinder',
+  radius: 5,
+  height: 10,
+  sides: 6,
+  sideLength: 4
+};
+
+function setup() {
+  const canvas = createCanvas(780, 440, WEBGL);
+  canvas.parent('canvas-container');
+  applyParams();
+}
+
+function computeAutoScale() {
+  let maxDim;
+  if (params.type === 'cylinder' || params.type === 'cone') {
+    maxDim = Math.max(params.radius * 2, params.height);
+  } else {
+    const R = params.sideLength / (2 * Math.sin(Math.PI / params.sides));
+    maxDim = Math.max(R * 2, params.height);
+  }
+  return 230 / Math.max(maxDim, 0.1);
+}
+
+function draw() {
+  background(125, 125, 20);
+  orbitControl(2, 2, 0.1);
+push();
+  stroke(40);
+  strokeWeight(1);
+  const gridSize = 500, step = 50;
+  for (let i = -gridSize; i <= gridSize; i += step) {
+    line(i, 250, -gridSize, i, 250, gridSize);
+    line(-gridSize, 250, i, gridSize, 250, i);
+  }
+  pop();
+  push();
+  fill(100, 200, 255, 220);
+  stroke(255, 255, 255, 140);
+  strokeWeight(0.8);
+
+  const s = computeAutoScale();
+
+  if (params.type === 'cylinder') {
+    cylinder(params.radius * s, params.height * s, 48);
+  } else if (params.type === 'cone') {
+    cone(params.radius * s, params.height * s, 48);
+  } else if (params.type === 'prism') {
+    drawPrism(params.sides, params.sideLength * s, params.height * s);
+  } else if (params.type === 'pyramid') {
+    drawPyramid(params.sides, params.sideLength * s, params.height * s);
+  }
+  pop();
+}
+
+function drawPrism(n, s, h) {
+  const R = s / (2 * Math.sin(Math.PI / n));
+
+  // top face
+  beginShape();
+  for (let i = 0; i < n; i++) {
+    const a = TWO_PI * i / n;
+    vertex(R * cos(a), -h/2, R * sin(a));
+  }
+  endShape(CLOSE);
+
+  // bottom face
+  beginShape();
+  for (let i = 0; i < n; i++) {
+    const a = TWO_PI * i / n;
+    vertex(R * cos(a), h/2, R * sin(a));
+  }
+  endShape(CLOSE);
+
+  // sides
+  for (let i = 0; i < n; i++) {
+    const a1 = TWO_PI * i / n;
+    const a2 = TWO_PI * (i+1) / n;
+    beginShape();
+    vertex(R * cos(a1), -h/2, R * sin(a1));
+    vertex(R * cos(a2), -h/2, R * sin(a2));
+    vertex(R * cos(a2),  h/2, R * sin(a2));
+    vertex(R * cos(a1),  h/2, R * sin(a1));
+    endShape(CLOSE);
+  }
+}
+
+function drawPyramid(n, s, h) {
+  const R = s / (2 * Math.sin(Math.PI / n));
+
+  // base
+  beginShape();
+  for (let i = 0; i < n; i++) {
+    const a = TWO_PI * i / n;
+    vertex(R * cos(a), h/2, R * sin(a));
+  }
+  endShape(CLOSE);
+
+  // triangular side faces to apex
+  for (let i = 0; i < n; i++) {
+    const a1 = TWO_PI * i / n;
+    const a2 = TWO_PI * (i+1) / n;
+    beginShape();
+    vertex(R * cos(a1), h/2, R * sin(a1));
+    vertex(R * cos(a2), h/2, R * sin(a2));
+    vertex(0, -h/2, 0);
+    endShape(CLOSE);
+  }
+}
+
+// --- UI wiring ---
+const solidTypeEl = document.getElementById('solidType');
+const radiusField = document.getElementById('radiusField');
+const sidesField = document.getElementById('sidesField');
+const sideLengthField = document.getElementById('sideLengthField');
+
+function syncVisibleFields() {
+  const t = solidTypeEl.value;
+  const showRadius = (t === 'cylinder' || t === 'cone');
+  const showPoly = (t === 'prism' || t === 'pyramid');
+  radiusField.classList.toggle('hidden', !showRadius);
+  sidesField.classList.toggle('hidden', !showPoly);
+  sideLengthField.classList.toggle('hidden', !showPoly);
+}
+
+['solidType', 'radius', 'sides', 'sideLength', 'height'].forEach(id => {
+  const el = document.getElementById(id);
+  el.addEventListener('input', applyParams);
+  el.addEventListener('change', () => { syncVisibleFields(); applyParams(); });
+});
+
+function applyParams() {
+  params.type = solidTypeEl.value;
+  params.radius = Math.max(0.1, parseFloat(document.getElementById('radius').value) || 1);
+  params.height = Math.max(0.1, parseFloat(document.getElementById('height').value) || 1);
+  params.sides = Math.max(3, Math.min(24, parseInt(document.getElementById('sides').value, 10) || 3));
+  params.sideLength = Math.max(0.1, parseFloat(document.getElementById('sideLength').value) || 1);
+  updateResults();
+}
+
+// --- math / results ---
+function fmt(x, d=3) {
+  if (Number.isInteger(x)) return x.toString();
+  const r = Math.round(x * Math.pow(10, d)) / Math.pow(10, d);
+  return r.toString();
+}
+
+function updateResults() {
+  const out = document.getElementById('formulaDisplay');
+  const r = params.radius, h = params.height;
+  const n = params.sides, s = params.sideLength;
+  let html = '';
+
+  if (params.type === 'cylinder') {
+    const vCoef = r * r * h;
+    const saCoef = 2*r*r + 2*r*h;
+    html = `
+      <div class="formula"><span class="label">Volume:</span> V = πr²h = π(${fmt(r)})²(${fmt(h)}) = <b>${fmt(vCoef)}π</b></div>
+      <div class="formula"><span class="label">Surface Area:</span> SA = 2πr² + 2πrh = 2π(${fmt(r*r)}) + 2π(${fmt(r*h)}) = <b>${fmt(saCoef)}π</b></div>
+    `;
+  } else if (params.type === 'cone') {
+    const vCoef = (r * r * h) / 3;
+    const l2 = r*r + h*h;
+    const l = Math.sqrt(l2);
+    const lIsInt = Number.isInteger(l);
+    const saR2 = r*r;
+    const saRL = r * l;
+    const saTotal = saR2 + saRL;
+    const slantStr = lIsInt
+      ? `√${fmt(l2)} = ${fmt(l)}`
+      : `√${fmt(l2)} ≈ ${fmt(l)}`;
+    const saExact = lIsInt
+      ? `<b>${fmt(saTotal)}π</b>`
+      : `<b>(${fmt(saR2)} + ${fmt(r)}√${fmt(l2)})π ≈ ${fmt(saTotal)}π</b>`;
+    html = `
+      <div class="formula"><span class="label">Volume:</span> V = ⅓πr²h = ⅓π(${fmt(r)})²(${fmt(h)}) = <b>${fmt(vCoef)}π</b></div>
+      <div class="formula"><span class="label">Slant height:</span> ℓ = √(r² + h²) = ${slantStr}</div>
+      <div class="formula"><span class="label">Surface Area:</span> SA = πr² + πrℓ = ${saExact}</div>
+    `;
+  } else if (params.type === 'prism') {
+    const baseArea = (n * s * s) / (4 * Math.tan(Math.PI / n));
+    const perim = n * s;
+    const V = baseArea * h;
+    const lateralSA = perim * h;
+    const SA = 2 * baseArea + lateralSA;
+    html = `
+      <div class="formula"><span class="label">Base area:</span> A = (n·s²) / (4·tan(360/2 x n)) = (${n}·${fmt(s*s)}) / (4·tan(360/ 2 x ${n})) ≈ <b>${fmt(baseArea)}</b></div>
+      <div class="formula"><span class="label">Perimeter:</span> P = n·s = ${n}·${fmt(s)} = <b>${fmt(perim)}</b></div>
+      <div class="formula"><span class="label">Volume:</span> V = A·h ≈ ${fmt(baseArea)} · ${fmt(h)} ≈ <b>${fmt(V)}</b></div>
+      <div class="formula"><span class="label">Surface Area:</span> SA = 2A + P·h ≈ 2(${fmt(baseArea)}) + (${fmt(perim)})(${fmt(h)}) ≈ <b>${fmt(SA)}</b></div>
+    `;
+  } else if (params.type === 'pyramid') {
+    const baseArea = (n * s * s) / (4 * Math.tan(Math.PI / n));
+    const apothem = s / (2 * Math.tan(Math.PI / n));
+    const slant = Math.sqrt(apothem * apothem + h * h);
+    const perim = n * s;
+    const V = baseArea * h / 3;
+    const lateralSA = 0.5 * perim * slant;
+    const SA = baseArea + lateralSA;
+    html = `
+      <div class="formula"><span class="label">Base area:</span> A = (n·s²) / (4·tan(360/2n)) ≈ <b>${fmt(baseArea)}</b></div>
+      <div class="formula"><span class="label">Apothem:</span> a = s / (2·tan(π/n)) ≈ <b>${fmt(apothem)}</b></div>
+      <div class="formula"><span class="label">Slant height:</span> ℓ = √(a² + h²) ≈ <b>${fmt(slant)}</b></div>
+      <div class="formula"><span class="label">Volume:</span> V = ⅓·A·h ≈ ⅓(${fmt(baseArea)})(${fmt(h)}) ≈ <b>${fmt(V)}</b></div>
+      <div class="formula"><span class="label">Surface Area:</span> SA = A + ½·P·ℓ ≈ ${fmt(baseArea)} + ½(${fmt(perim)})(${fmt(slant)}) ≈ <b>${fmt(SA)}</b></div>
+    `;
+  }
+
+  out.innerHTML = html;
+}
+
+syncVisibleFields();
+</script>
+</body>
+</html>
