@@ -361,13 +361,13 @@ function updateResults() {
     const lateralSA = perim * h;
     const SA = 2 * baseArea + lateralSA;
     html = `
-      <div class="formula"><span class="label">Base area:</span> A = (n·s²) / (4·sin(360/(2 x n))/cos(360/(2 x n))) = (${n}·${fmt(s*s)}) / (4·sin(180/${n}).cos(180/${n})) ≈ <b>${fmt(baseArea)}</b></div>
+      <div class="formula"><span class="label">Base area:</span> A = (n·s²) / (4·sin(360/(2 x n))/cos(360/(2 x n))) = (${n}·${fmt(s*s)}) / (4·sin(180/${n})/cos(180/${n})) ≈ <b>${fmt(baseArea)}</b></div>
       <div class="formula"><span class="label">Perimeter:</span> P = n·s = ${n}·${fmt(s)} = <b>${fmt(perim)}</b></div>
       <div class="formula"><span class="label">Volume:</span> V = A·h ≈ ${fmt(baseArea)} · ${fmt(h)} ≈ <b>${fmt(V)}</b></div>
       <div class="formula"><span class="label">Surface Area:</span> SA = 2A + P·h ≈ 2(${fmt(baseArea)}) + (${fmt(perim)})(${fmt(h)}) ≈ <b>${fmt(SA)}</b></div>
     `;
   } else if (params.type === 'pyramid') {
-    const baseArea = (n * s * s) / (4 * Math.sin(Math.PI / n)/Math.sin(Math.PI/n));
+    const baseArea = (n * s * s) / (4 * Math.sin(Math.PI / n)/Math.cos(Math.PI/n));
     const apothem = s / (2 * Math.sin(Math.PI / n)/ Math.cos(Math.PI/n));
     const slant = Math.sqrt(apothem * apothem + h * h);
     const perim = n * s;
