@@ -375,8 +375,8 @@ function updateResults() {
     const lateralSA = 0.5 * perim * slant;
     const SA = baseArea + lateralSA;
     html = `
-      <div class="formula"><span class="label">Base area:</span> A = (n·s²) / (4 * Math.sin(Math.PI / n)/Math.cos(Math.PI/n)) ≈ <b>${fmt(baseArea)}</b></div>
-      <div class="formula"><span class="label">Apothem:</span> a = s / (2·sin(π/n)/cos(π/n)) ≈ <b>${fmt(apothem)}</b></div>
+      <div class="formula"><span class="label">Base area:</span> A = (n·s²) / (4 * Math.sin(180/ n)/Math.cos(180/n)) ≈ <b>${fmt(baseArea)}</b></div>
+      <div class="formula"><span class="label">Apothem:</span> a = s / (2·sin(180/n)/cos(180/n)) ≈ <b>${fmt(apothem)}</b></div>
       <div class="formula"><span class="label">Slant height:</span> ℓ = √(a² + h²) ≈ <b>${fmt(slant)}</b></div>
       <div class="formula"><span class="label">Volume:</span> V = ⅓·A·h ≈ ⅓(${fmt(baseArea)})(${fmt(h)}) ≈ <b>${fmt(V)}</b></div>
       <div class="formula"><span class="label">Surface Area:</span> SA = A + ½·P·ℓ ≈ ${fmt(baseArea)} + ½(${fmt(perim)})(${fmt(slant)}) ≈ <b>${fmt(SA)}</b></div>
